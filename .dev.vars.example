@@ -1,0 +1,5 @@
+/* Copy this file to `.dev.vars` (gitignored) for local development.
+   Get these from the Square Developer Dashboard: https://developer.squareup.com/apps
+   Use a SANDBOX access token while testing. */
+
+SQUARE_ACCESS_TOKEN=your-square-sandbox-access-token

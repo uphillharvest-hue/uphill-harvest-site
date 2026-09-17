@@ -1,0 +1,26 @@
+@import "tailwindcss" source(".");
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  /* UPHILL HARVEST brand palette */
+  --color-brand-teal: #0f6e66;
+  --color-brand-teal-dark: #0a4a44;
+  --color-brand-orange: #e8791a;
+  --color-brand-orange-dark: #b85f12;
+  --color-brand-grey: #4b5563;
+  --color-brand-black: #14161a;
+  --color-brand-cream: #faf7f2;
+}
+
+html,
+body {
+  @apply bg-brand-cream text-brand-black;
+  background-color: var(--color-brand-cream);
+  color: var(--color-brand-black);
+}
+
+* {
+  box-sizing: border-box;
+}

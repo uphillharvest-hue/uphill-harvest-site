@@ -2,7 +2,7 @@ import { useState } from "react";
 import { data, Link, useNavigate } from "react-router";
 import type { Route } from "./+types/product";
 import { getProduct, formatPrice } from "../data/products";
-import { ProductArt } from "../components/ProductArt";
+import { ProductPhoto } from "../components/ProductPhoto";
 import { useCart } from "../context/cart-context";
 
 export function meta({ loaderData }: Route.MetaArgs) {
@@ -31,7 +31,7 @@ export default function ProductDetail({ loaderData }: Route.ComponentProps) {
         ← Back to shop
       </Link>
       <div className="mt-6 grid gap-10 md:grid-cols-2">
-        <ProductArt product={product} className="h-80 w-full" />
+        <ProductPhoto product={product} sizeLabel={sizeLabel} className="h-80 w-full" />
         <div>
           <h1 className="text-3xl font-bold">{product.name}</h1>
           <p className="mt-1 text-brand-grey">{product.tagline}</p>

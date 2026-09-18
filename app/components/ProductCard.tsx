@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import type { Product } from "../data/products";
 import { formatPrice } from "../data/products";
-import { ProductArt } from "./ProductArt";
+import { ProductPhoto } from "./ProductPhoto";
 import { useCart } from "../context/cart-context";
 
 export function ProductCard({ product }: { product: Product }) {
@@ -13,7 +13,7 @@ export function ProductCard({ product }: { product: Product }) {
   return (
     <div className="group flex flex-col overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition hover:shadow-md">
       <Link to={`/shop/${product.slug}`} className="block">
-        <ProductArt product={product} className="h-48 w-full" />
+        <ProductPhoto product={product} sizeLabel={sizeLabel} className="h-48 w-full" />
       </Link>
       <div className="flex flex-1 flex-col gap-2 p-5">
         <Link to={`/shop/${product.slug}`} className="hover:text-brand-teal">

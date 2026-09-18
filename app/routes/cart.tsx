@@ -68,14 +68,14 @@ export default function Cart() {
         <span className="text-lg font-semibold">{formatPrice(totalCents)}</span>
       </div>
 
-      <Form method="post" action="/checkout" className="mt-6">
+      <Form method="post" action="/checkout/shipping" className="mt-6">
         <input type="hidden" name="cart" value={JSON.stringify(lines)} />
         <button
           type="submit"
           disabled={lines.length === 0}
           className="w-full rounded-full bg-brand-orange px-6 py-3 text-center font-semibold text-white transition hover:bg-brand-orange-dark disabled:opacity-50"
         >
-          Checkout with Square
+          Continue to shipping
         </button>
       </Form>
     </main>

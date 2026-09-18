@@ -3,3 +3,11 @@
    Use a SANDBOX access token while testing. */
 
 SQUARE_ACCESS_TOKEN=your-square-sandbox-access-token
+
+/* Free, instant signup at https://easypost.com — no business verification
+   needed to get a Test API Key (starts with EZTK...). Used to fetch live
+   shipping rates in app/lib/shipping.ts. Test keys return realistic-looking
+   sample rates without actually charging or creating real labels, which is
+   fine for building/reviewing this flow before going live. */
+
+EASYPOST_API_KEY=your-easypost-test-api-key

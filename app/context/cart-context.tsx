@@ -6,18 +6,23 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getProduct } from "../data/products";
+import { getProduct, getSize } from "../data/products";
 
 export interface CartLine {
   slug: string;
+  sizeLabel: string;
   quantity: number;
+}
+
+function lineKey(slug: string, sizeLabel: string) {
+  return `${slug}::${sizeLabel}`;
 }
 
 interface CartContextValue {
   lines: CartLine[];
-  addItem: (slug: string, quantity?: number) => void;
-  removeItem: (slug: string) => void;
-  setQuantity: (slug: string, quantity: number) => void;
+  addItem: (slug: string, sizeLabel: string, quantity?: number) => void;
+  removeItem: (slug: string, sizeLabel: string) => void;
+  setQuantity: (slug: string, sizeLabel: string, quantity: number) => void;
   clear: () => void;
   totalItems: number;
   totalCents: number;
@@ -51,26 +56,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [lines, hydrated]);
 
-  const addItem = (slug: string, quantity = 1) => {
+  const addItem = (slug: string, sizeLabel: string, quantity = 1) => {
     setLines((prev) => {
-      const existing = prev.find((l) => l.slug === slug);
+      const key = lineKey(slug, sizeLabel);
+      const existing = prev.find((l) => lineKey(l.slug, l.sizeLabel) === key);
       if (existing) {
         return prev.map((l) =>
-          l.slug === slug ? { ...l, quantity: l.quantity + quantity } : l,
+          lineKey(l.slug, l.sizeLabel) === key ? { ...l, quantity: l.quantity + quantity } : l,
         );
       }
-      return [...prev, { slug, quantity }];
+      return [...prev, { slug, sizeLabel, quantity }];
     });
   };
 
-  const removeItem = (slug: string) => {
-    setLines((prev) => prev.filter((l) => l.slug !== slug));
+  const removeItem = (slug: string, sizeLabel: string) => {
+    const key = lineKey(slug, sizeLabel);
+    setLines((prev) => prev.filter((l) => lineKey(l.slug, l.sizeLabel) !== key));
   };
 
-  const setQuantity = (slug: string, quantity: number) => {
+  const setQuantity = (slug: string, sizeLabel: string, quantity: number) => {
+    const key = lineKey(slug, sizeLabel);
     setLines((prev) => {
-      if (quantity <= 0) return prev.filter((l) => l.slug !== slug);
-      return prev.map((l) => (l.slug === slug ? { ...l, quantity } : l));
+      if (quantity <= 0) return prev.filter((l) => lineKey(l.slug, l.sizeLabel) !== key);
+      return prev.map((l) => (lineKey(l.slug, l.sizeLabel) === key ? { ...l, quantity } : l));
     });
   };
 
@@ -81,9 +89,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     let cents = 0;
     for (const line of lines) {
       const product = getProduct(line.slug);
-      if (!product) continue;
+      const size = product && getSize(product, line.sizeLabel);
+      if (!product || !size) continue;
       items += line.quantity;
-      cents += product.priceCents * line.quantity;
+      cents += size.priceCents * line.quantity;
     }
     return { totalItems: items, totalCents: cents };
   }, [lines]);

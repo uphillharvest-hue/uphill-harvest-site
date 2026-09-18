@@ -1,10 +1,11 @@
 import { data, redirect } from "react-router";
 import type { Route } from "./+types/checkout";
-import { getProduct } from "../data/products";
+import { getProduct, getSize } from "../data/products";
 import { cloudflareContext } from "../lib/cloudflare-context";
 
 interface CartLineInput {
   slug: string;
+  sizeLabel: string;
   quantity: number;
 }
 
@@ -26,12 +27,13 @@ export async function action({ request, context }: Route.ActionArgs) {
   const lineItems = lines
     .map((line) => {
       const product = getProduct(line.slug);
-      if (!product || line.quantity <= 0) return null;
+      const size = product && getSize(product, line.sizeLabel);
+      if (!product || !size || line.quantity <= 0) return null;
       return {
-        name: product.name,
+        name: `${product.name} (${size.label})`,
         quantity: String(line.quantity),
         base_price_money: {
-          amount: product.priceCents,
+          amount: size.priceCents,
           currency: "USD",
         },
       };

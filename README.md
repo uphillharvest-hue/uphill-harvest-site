@@ -5,8 +5,8 @@ React Router (Framework Mode) and deployed on Cloudflare Workers.
 
 ## What's here
 
-- `app/data/products.ts` — the product catalog (names, descriptions, ingredients,
-  **placeholder prices** — confirm real prices before launch).
+- `app/data/products.ts` — the confirmed product catalog: 4 juices (12 oz / 16 oz /
+  Gallon pricing) and 3 wellness shots (2 oz).
 - `app/routes/` — pages: home, shop, product detail, cart, and the checkout flow.
 - `app/context/cart-context.tsx` — client-side cart (persisted to the browser's
   local storage, no account needed to shop).
@@ -54,6 +54,7 @@ Or connect this repo to Cloudflare Workers Builds (Workers & Pages → your proj
 
 ## Product catalog
 
-Prices in `app/data/products.ts` are placeholders and a couple of recipes are
-flagged `confirmed: false` because more than one version existed in prior notes
-(Beet Boost, Pineapple Ginger Cleanse). Update these before launch.
+**Juices** (Island Glow, Green Goddess, Sunrise Blend, Beet Boost 2): 12 oz $7,
+16 oz $9, Gallon $65.
+
+**Wellness Shots**, 2 oz, $5 each: Ginger Essence, Golden Fire, Beet Charge.

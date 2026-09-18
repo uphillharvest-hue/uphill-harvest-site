@@ -7,7 +7,7 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Shop() {
-  const bottles = products.filter((p) => p.category === "bottle");
+  const juices = products.filter((p) => p.category === "juice");
   const shots = products.filter((p) => p.category === "shot");
 
   return (
@@ -17,10 +17,10 @@ export default function Shop() {
         Every bottle is pressed in small batches. Pick your favorites and add them to your cart.
       </p>
 
-      <section id="bottles" className="mt-12 scroll-mt-24">
-        <h2 className="mb-6 text-xl font-semibold">Juices — 16 oz</h2>
+      <section id="juices" className="mt-12 scroll-mt-24">
+        <h2 className="mb-6 text-xl font-semibold">Juices — 12 oz, 16 oz &amp; Gallon</h2>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {bottles.map((product) => (
+          {juices.map((product) => (
             <ProductCard key={product.slug} product={product} />
           ))}
         </div>

@@ -15,7 +15,7 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Home() {
-  const featured = products.filter((p) => p.category === "bottle").slice(0, 3);
+  const featured = products.filter((p) => p.category === "juice");
 
   return (
     <main>

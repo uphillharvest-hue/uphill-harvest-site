@@ -1,6 +1,6 @@
 import { Form, Link } from "react-router";
 import type { Route } from "./+types/cart";
-import { getProduct, formatPrice } from "../data/products";
+import { getProduct, getSize, formatPrice } from "../data/products";
 import { useCart } from "../context/cart-context";
 
 export function meta({}: Route.MetaArgs) {
@@ -32,13 +32,14 @@ export default function Cart() {
       <ul className="mt-8 divide-y divide-black/5">
         {lines.map((line) => {
           const product = getProduct(line.slug);
-          if (!product) return null;
+          const size = product && getSize(product, line.sizeLabel);
+          if (!product || !size) return null;
           return (
-            <li key={line.slug} className="flex items-center justify-between gap-4 py-4">
+            <li key={`${line.slug}::${line.sizeLabel}`} className="flex items-center justify-between gap-4 py-4">
               <div>
                 <p className="font-medium">{product.name}</p>
                 <p className="text-sm text-brand-grey">
-                  {formatPrice(product.priceCents)} · {product.sizeLabel}
+                  {formatPrice(size.priceCents)} · {line.sizeLabel}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -46,12 +47,12 @@ export default function Cart() {
                   type="number"
                   min={0}
                   value={line.quantity}
-                  onChange={(e) => setQuantity(line.slug, Number(e.target.value))}
+                  onChange={(e) => setQuantity(line.slug, line.sizeLabel, Number(e.target.value))}
                   className="w-16 rounded-lg border border-black/10 px-2 py-1 text-center"
                 />
                 <button
                   type="button"
-                  onClick={() => removeItem(line.slug)}
+                  onClick={() => removeItem(line.slug, line.sizeLabel)}
                   className="text-sm text-brand-grey hover:text-brand-orange"
                 >
                   Remove

@@ -170,6 +170,9 @@ export async function action({ request, context }: Route.ActionArgs) {
           // order qualifies — also needs Afterpay turned on under
           // Square Dashboard > Settings > Payments > Payment methods.
           afterpay_clearpay: true,
+          // Also needs Cash App Pay turned on under Square Dashboard >
+          // Payments & orders > Payment links > Settings > General.
+          cash_app_pay: true,
         },
         ...(shippingFee ? { shipping_fee: shippingFee } : {}),
       },

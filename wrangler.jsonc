@@ -9,13 +9,11 @@
 	"main": "./workers/app.ts",
 	"vars": {
 		// Square location to sell from — safe to keep here (not secret).
-		// This is currently Square's SANDBOX "Default Test Account" location
-		// (for testing checkout end-to-end). Before going live, replace with
-		// the real business Location ID from the Production tab of the
-		// Square Developer Dashboard, and flip SQUARE_ENVIRONMENT below.
-		"SQUARE_LOCATION_ID": "L4P7H4X55TWQY",
-		// "production" once real Square credentials are wired in, "sandbox" for testing.
-		"SQUARE_ENVIRONMENT": "sandbox"
+		// This is the real UPHILL HARVEST ("JUICE") location, added under the
+		// Low Country Kitchen Square account's Production tab.
+		"SQUARE_LOCATION_ID": "L0VSH690T2W23",
+		// "production" — live, real cards get charged. Was "sandbox" for testing.
+		"SQUARE_ENVIRONMENT": "production"
 	},
 	// SQUARE_ACCESS_TOKEN is a SECRET and must NOT go in this file.
 	// Set it with: npx wrangler secret put SQUARE_ACCESS_TOKEN

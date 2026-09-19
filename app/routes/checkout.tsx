@@ -164,6 +164,12 @@ export async function action({ request, context }: Route.ActionArgs) {
         accepted_payment_methods: {
           apple_pay: true,
           google_pay: true,
+          // Buy-now-pay-later: splits the order into 4 interest-free
+          // payments for the customer. Square pays us the full amount
+          // upfront. Works for orders roughly $1–$2,000, so any juice
+          // order qualifies — also needs Afterpay turned on under
+          // Square Dashboard > Settings > Payments > Payment methods.
+          afterpay_clearpay: true,
         },
         ...(shippingFee ? { shipping_fee: shippingFee } : {}),
       },

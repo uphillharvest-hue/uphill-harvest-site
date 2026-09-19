@@ -9,8 +9,11 @@
 	"main": "./workers/app.ts",
 	"vars": {
 		// Square location to sell from — safe to keep here (not secret).
-		// Fill in with the real Location ID from the Square Developer Dashboard.
-		"SQUARE_LOCATION_ID": "REPLACE_WITH_SQUARE_LOCATION_ID",
+		// This is currently Square's SANDBOX "Default Test Account" location
+		// (for testing checkout end-to-end). Before going live, replace with
+		// the real business Location ID from the Production tab of the
+		// Square Developer Dashboard, and flip SQUARE_ENVIRONMENT below.
+		"SQUARE_LOCATION_ID": "L4P7H4x55TWC",
 		// "production" once real Square credentials are wired in, "sandbox" for testing.
 		"SQUARE_ENVIRONMENT": "sandbox"
 	},

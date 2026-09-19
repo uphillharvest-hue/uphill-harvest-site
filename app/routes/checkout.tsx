@@ -156,6 +156,15 @@ export async function action({ request, context }: Route.ActionArgs) {
         // We already collected the address (or skipped it, for pickup) on
         // our own pages, so don't make Square ask for it again.
         ask_for_shipping_address: false,
+        // Show Apple Pay (and Google Pay) as one-tap options on Square's
+        // hosted checkout page, alongside the regular card form. These only
+        // ever appear when the buyer's own browser/device supports them
+        // (e.g. Apple Pay needs Safari on an Apple device) — this setting
+        // just allows Square to offer them when it can.
+        accepted_payment_methods: {
+          apple_pay: true,
+          google_pay: true,
+        },
         ...(shippingFee ? { shipping_fee: shippingFee } : {}),
       },
     }),

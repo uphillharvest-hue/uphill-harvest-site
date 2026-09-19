@@ -44,44 +44,80 @@ export async function action({ request, context }: Route.ActionArgs) {
     throw data("Your cart is empty.", { status: 400 });
   }
 
-  // Shipping was quoted and picked on /checkout/shipping — pull the chosen
-  // rate + recipient back out of the hidden fields that form posted here.
-  const rateOptionsRaw = formData.get("rateOptions");
-  const selectedRateIndexRaw = formData.get("selectedRateIndex");
+  // Two fulfillment paths land here: a customer picking up locally posts
+  // straight from /cart with fulfillmentType=PICKUP (no shipping needed at
+  // all), while a customer shipping goes through /checkout/shipping first,
+  // which forwards the chosen rate + recipient address as hidden fields.
+  const fulfillmentType = formData.get("fulfillmentType");
+
+  let fulfillment: Record<string, unknown>;
   let shippingFee: { name: string; charge: { amount: number; currency: string } } | null = null;
-  if (typeof rateOptionsRaw === "string" && typeof selectedRateIndexRaw === "string") {
-    try {
-      const rateOptions = JSON.parse(rateOptionsRaw) as { label: string; totalCents: number }[];
-      const chosen = rateOptions[Number(selectedRateIndexRaw)];
-      if (chosen) {
-        shippingFee = {
-          name: chosen.label,
-          charge: { amount: chosen.totalCents, currency: "USD" },
-        };
-      }
-    } catch {
-      // fall through — shippingFee stays null and we bail out below
+
+  if (fulfillmentType === "PICKUP") {
+    const pickupName = formData.get("pickupName");
+    if (typeof pickupName !== "string" || pickupName.trim() === "") {
+      throw data("Missing your name for pickup. Please start from your cart.", { status: 400 });
     }
-  }
+    const pickupPhone = formData.get("pickupPhone");
 
-  if (!shippingFee) {
-    throw data("Missing shipping selection. Please start from your cart.", { status: 400 });
-  }
+    fulfillment = {
+      type: "PICKUP",
+      pickup_details: {
+        recipient: {
+          display_name: pickupName,
+          phone_number:
+            typeof pickupPhone === "string" && pickupPhone.trim() !== "" ? pickupPhone : undefined,
+        },
+        // ASAP tells Square to prep this right away; Square sets pickup_at
+        // for us. (Local pickup hours/availability are configured in the
+        // Square Dashboard's Order Manager / fulfillment settings.)
+        schedule_type: "ASAP",
+      },
+    };
+  } else {
+    // Shipping was quoted and picked on /checkout/shipping — pull the chosen
+    // rate + recipient back out of the hidden fields that form posted here.
+    const rateOptionsRaw = formData.get("rateOptions");
+    const selectedRateIndexRaw = formData.get("selectedRateIndex");
+    if (typeof rateOptionsRaw === "string" && typeof selectedRateIndexRaw === "string") {
+      try {
+        const rateOptions = JSON.parse(rateOptionsRaw) as { label: string; totalCents: number }[];
+        const chosen = rateOptions[Number(selectedRateIndexRaw)];
+        if (chosen) {
+          shippingFee = {
+            name: chosen.label,
+            charge: { amount: chosen.totalCents, currency: "USD" },
+          };
+        }
+      } catch {
+        // fall through — shippingFee stays null and we bail out below
+      }
+    }
 
-  const recipientStreet1 = formData.get("recipientStreet1");
-  if (typeof recipientStreet1 !== "string" || recipientStreet1.trim() === "") {
-    throw data("Missing shipping address. Please start from your cart.", { status: 400 });
+    if (!shippingFee) {
+      throw data("Missing shipping selection. Please start from your cart.", { status: 400 });
+    }
+
+    const recipientStreet1 = formData.get("recipientStreet1");
+    if (typeof recipientStreet1 !== "string" || recipientStreet1.trim() === "") {
+      throw data("Missing shipping address. Please start from your cart.", { status: 400 });
+    }
+    const recipient = {
+      display_name: String(formData.get("recipientName") ?? ""),
+      address_line_1: recipientStreet1,
+      address_line_2: String(formData.get("recipientStreet2") ?? "") || undefined,
+      locality: String(formData.get("recipientCity") ?? ""),
+      administrative_district_level_1: String(formData.get("recipientState") ?? ""),
+      postal_code: String(formData.get("recipientZip") ?? ""),
+      country: "US",
+      phone_number: String(formData.get("recipientPhone") ?? "") || undefined,
+    };
+
+    fulfillment = {
+      type: "SHIPMENT",
+      shipment_details: { recipient },
+    };
   }
-  const recipient = {
-    display_name: String(formData.get("recipientName") ?? ""),
-    address_line_1: recipientStreet1,
-    address_line_2: String(formData.get("recipientStreet2") ?? "") || undefined,
-    locality: String(formData.get("recipientCity") ?? ""),
-    administrative_district_level_1: String(formData.get("recipientState") ?? ""),
-    postal_code: String(formData.get("recipientZip") ?? ""),
-    country: "US",
-    phone_number: String(formData.get("recipientPhone") ?? "") || undefined,
-  };
 
   const { env } = context.get(cloudflareContext);
   const accessToken = env.SQUARE_ACCESS_TOKEN;
@@ -113,21 +149,14 @@ export async function action({ request, context }: Route.ActionArgs) {
       order: {
         location_id: locationId,
         line_items: lineItems,
-        fulfillments: [
-          {
-            type: "SHIPMENT",
-            shipment_details: {
-              recipient,
-            },
-          },
-        ],
+        fulfillments: [fulfillment],
       },
       checkout_options: {
         redirect_url: `${origin}/checkout/success`,
-        // We already collected + quoted the address on /checkout/shipping,
-        // so don't make Square ask for it again.
+        // We already collected the address (or skipped it, for pickup) on
+        // our own pages, so don't make Square ask for it again.
         ask_for_shipping_address: false,
-        shipping_fee: shippingFee,
+        ...(shippingFee ? { shipping_fee: shippingFee } : {}),
       },
     }),
   });

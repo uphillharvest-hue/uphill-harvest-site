@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Form, Link } from "react-router";
 import type { Route } from "./+types/cart";
 import { getProduct, getSize, formatPrice } from "../data/products";
@@ -9,6 +10,8 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Cart() {
   const { lines, setQuantity, removeItem, totalCents } = useCart();
+  const [pickupName, setPickupName] = useState("");
+  const [pickupPhone, setPickupPhone] = useState("");
 
   if (lines.length === 0) {
     return (
@@ -68,16 +71,70 @@ export default function Cart() {
         <span className="text-lg font-semibold">{formatPrice(totalCents)}</span>
       </div>
 
-      <Form method="post" action="/checkout/shipping" className="mt-6">
-        <input type="hidden" name="cart" value={JSON.stringify(lines)} />
-        <button
-          type="submit"
-          disabled={lines.length === 0}
-          className="w-full rounded-full bg-brand-orange px-6 py-3 text-center font-semibold text-white transition hover:bg-brand-orange-dark disabled:opacity-50"
-        >
-          Continue to shipping
-        </button>
-      </Form>
+      <div className="mt-8 border-t border-black/10 pt-6">
+        <h2 className="text-lg font-semibold">How would you like to get your order?</h2>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="rounded-xl border border-black/10 p-4">
+            <p className="font-medium">Pick up locally</p>
+            <p className="mt-1 text-sm text-brand-grey">No shipping — grab it fresh, ready shortly after you order.</p>
+
+            <Form method="post" action="/checkout" className="mt-4 space-y-3">
+              <input type="hidden" name="cart" value={JSON.stringify(lines)} />
+              <input type="hidden" name="fulfillmentType" value="PICKUP" />
+              <div>
+                <label htmlFor="pickupName" className="block text-sm font-medium">
+                  Name for pickup
+                </label>
+                <input
+                  id="pickupName"
+                  name="pickupName"
+                  required
+                  value={pickupName}
+                  onChange={(e) => setPickupName(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2"
+                />
+              </div>
+              <div>
+                <label htmlFor="pickupPhone" className="block text-sm font-medium">
+                  Phone number (optional)
+                </label>
+                <input
+                  id="pickupPhone"
+                  name="pickupPhone"
+                  type="tel"
+                  value={pickupPhone}
+                  onChange={(e) => setPickupPhone(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={lines.length === 0 || pickupName.trim() === ""}
+                className="w-full rounded-full bg-brand-teal px-6 py-3 text-center font-semibold text-white transition hover:bg-brand-teal-dark disabled:opacity-50"
+              >
+                Continue — pick up locally
+              </button>
+            </Form>
+          </div>
+
+          <div className="rounded-xl border border-black/10 p-4">
+            <p className="font-medium">Ship to me</p>
+            <p className="mt-1 text-sm text-brand-grey">We'll quote a live, expedited shipping rate at checkout.</p>
+
+            <Form method="post" action="/checkout/shipping" className="mt-4">
+              <input type="hidden" name="cart" value={JSON.stringify(lines)} />
+              <button
+                type="submit"
+                disabled={lines.length === 0}
+                className="w-full rounded-full bg-brand-orange px-6 py-3 text-center font-semibold text-white transition hover:bg-brand-orange-dark disabled:opacity-50"
+              >
+                Continue to shipping
+              </button>
+            </Form>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

@@ -14,8 +14,8 @@ export function Footer() {
           <div className="text-sm text-brand-cream/70">
             <p>Brunswick, GA</p>
             <p className="mt-1">
-              <a href="mailto:hello@uphillnutrition.us" className="hover:text-brand-orange">
-                hello@uphillnutrition.us
+              <a href="mailto:info@uphillnutrition.us" className="hover:text-brand-orange">
+  info@uphillnutrition.us
               </a>
             </p>
           </div>

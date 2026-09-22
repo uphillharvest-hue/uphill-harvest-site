@@ -161,11 +161,11 @@ export default function Cart() {
       </div>
 
       <div className="mt-8 border-t border-black/10 pt-6">
-        <div className="rounded-xl border border-dashed border-brand-orange/50 bg-brand-orange/5 p-4">
-          <p className="font-medium">Online payment is temporarily down</p>
+        <div className="rounded-xl border border-black/10 bg-black/[0.02] p-4">
+          <p className="font-medium">Special or bulk order? Have a question?</p>
           <p className="mt-1 text-sm text-brand-grey">
-            Email us your order instead — we'll follow up by phone or email to confirm details and
-            collect payment.
+            For custom requests, larger bulk orders, or anything you'd like to ask before buying,
+            email us your details below and we'll follow up personally.
           </p>
 
           <Form method="post" action="/order-by-email" className="mt-4 space-y-4">

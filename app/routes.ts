@@ -10,4 +10,7 @@ export default [
   route("checkout/setup-needed", "routes/checkout-setup-needed.tsx"),
   route("checkout/success", "routes/checkout-success.tsx"),
   route("checkout/error", "routes/checkout-error.tsx"),
+  route("order-by-email", "routes/order-by-email.tsx"),
+  route("order-by-email/sent", "routes/order-by-email-sent.tsx"),
+  route("order-by-email/error", "routes/order-by-email-error.tsx"),
 ] satisfies RouteConfig;

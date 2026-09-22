@@ -8,4 +8,7 @@ interface Env {
   // From easypost.com — used to fetch live shipping rates. See the header
   // comment in app/lib/shipping.ts for setup steps.
   EASYPOST_API_KEY?: string;
+  // From resend.com — used to email submitted orders while Square checkout
+  // is down. See the header comment in app/lib/email-order.ts.
+  RESEND_API_KEY?: string;
 }

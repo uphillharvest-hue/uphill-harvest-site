@@ -1,21 +1,20 @@
 // Emails a submitted order to the site owner instead of charging a card.
-// This is the temporary workaround while Square checkout is broken in
-// production (see checkout.tsx) — customers fill out the cart page's
-// "Email us your order" form instead of paying online, and Davon follows up
-// to collect payment and confirm details directly.
+// This is the workaround for special/bulk orders and pre-purchase questions
+// (see cart.tsx) — customers fill out the cart page's "Special or bulk
+// order? Have a question?" form instead of paying online, and Davon follows
+// up to collect payment and confirm details directly.
 //
-// Uses Resend (https://resend.com) because it needs no DNS/domain setup to
-// get working: sign up free with the inbox you want orders to land in (e.g.
-// uphillharvest@gmail.com), grab an API key, and Resend's shared
-// `onboarding@resend.dev` sender can send TO that same inbox with no
-// verification step. (It can only send to the account's own address until a
-// custom domain is verified — which is exactly what we want here, since
-// every order email goes to one fixed inbox.)
+// Uses Resend (https://resend.com). Orders to the shop, and the customer's
+// own thank-you confirmation, are both sent from a verified sending domain
+// (mail.uphillnutrition.us) so Resend can deliver to any customer address,
+// not just the account's own inbox.
 import { getProduct, getSize, formatPrice } from "../data/products";
 import type { CartLine } from "../context/cart-context";
 
 export class EmailOrderNotConfiguredError extends Error {}
 export class EmailOrderSendError extends Error {}
+
+const SENDER = "UPHILL HARVEST <orders@mail.uphillnutrition.us>";
 
 export interface OrderLineItem {
   name: string;
@@ -70,6 +69,32 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
+async function sendViaResend(
+  apiKey: string,
+  payload: { to: string[]; replyTo?: string; subject: string; text: string; html: string },
+): Promise<void> {
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      from: SENDER,
+      to: payload.to,
+      reply_to: payload.replyTo || undefined,
+      subject: payload.subject,
+      text: payload.text,
+      html: payload.html,
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new EmailOrderSendError(body);
+  }
+}
+
 export async function sendOrderEmail(
   env: { RESEND_API_KEY?: string; ORDER_NOTIFY_EMAIL?: string },
   order: EmailedOrder,
@@ -103,8 +128,11 @@ export async function sendOrderEmail(
             : "(no address given)",
         ];
 
+  // ---------------------------------------------------------------------
+  // 1. Notify the shop (uphillharvest@gmail.com) — unchanged behavior.
+  // ---------------------------------------------------------------------
   const textLines = [
-    `New order submitted by email (Square checkout workaround)`,
+    `New special order / inquiry submitted by email`,
     ``,
     `Customer: ${order.customerName}`,
     `Email: ${order.customerEmail}`,
@@ -125,8 +153,8 @@ export async function sendOrderEmail(
   const text = textLines.join("\n");
 
   const html = `
-    <h2>New order submitted by email</h2>
-    <p><em>Square checkout workaround — this order was NOT paid online. Follow up with the customer to collect payment.</em></p>
+    <h2>New special order / inquiry submitted by email</h2>
+    <p><em>This order was NOT paid online. Follow up with the customer to collect payment.</em></p>
     <p>
       <strong>Customer:</strong> ${escapeHtml(order.customerName)}<br/>
       <strong>Email:</strong> ${escapeHtml(order.customerEmail)}<br/>
@@ -141,25 +169,74 @@ export async function sendOrderEmail(
     ${order.notes ? `<p><strong>Notes:</strong> ${escapeHtml(order.notes)}</p>` : ""}
   `.trim();
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-    },
-    body: JSON.stringify({
-      from: "UPHILL HARVEST Orders <onboarding@resend.dev>",
+  try {
+    await sendViaResend(env.RESEND_API_KEY, {
       to: [env.ORDER_NOTIFY_EMAIL],
-      reply_to: order.customerEmail || undefined,
+      replyTo: order.customerEmail || undefined,
       subject: `New order (email) — ${order.customerName} — ${formatPrice(totalCents)}`,
       text,
       html,
-    }),
-  });
+    });
+  } catch (err) {
+    console.error("Resend order email (shop) failed:", err);
+    throw err instanceof EmailOrderSendError ? err : new EmailOrderSendError(String(err));
+  }
 
-  if (!response.ok) {
-    const body = await response.text();
-    console.error("Resend order email failed:", body);
-    throw new EmailOrderSendError(body);
+  // ---------------------------------------------------------------------
+  // 2. Thank the customer — best-effort. If this fails, we don't want to
+  // break the order flow for the customer or block the shop notification
+  // above, which already succeeded. We just log it.
+  // ---------------------------------------------------------------------
+  if (order.customerEmail) {
+    try {
+      const customerFirstName = order.customerName.trim().split(/\s+/)[0] || order.customerName;
+
+      const customerTextLines = [
+        `Hi ${customerFirstName},`,
+        ``,
+        `Thank you for your order with UPHILL HARVEST! We've received your details, and our team will reach out shortly by phone or email to confirm everything and collect payment.`,
+        ``,
+        `Here's a summary of what you ordered:`,
+        ``,
+        ...itemLines.map((l) => `  - ${l}`),
+        ``,
+        `Total: ${formatPrice(totalCents)}`,
+        ...fulfillmentLines,
+        ``,
+        `Our juices are cold-pressed fresh to order, so we appreciate your patience while we get yours ready.`,
+        ``,
+        `Questions in the meantime? Just reply to this email or call 912-223-3475.`,
+        ``,
+        `— UPHILL HARVEST`,
+        `uphillnutrition.us`,
+      ];
+
+      const customerText = customerTextLines.join("\n");
+
+      const customerHtml = `
+        <p>Hi ${escapeHtml(customerFirstName)},</p>
+        <p>Thank you for your order with <strong>UPHILL HARVEST</strong>! We've received your details, and our team will reach out shortly by phone or email to confirm everything and collect payment.</p>
+        <p><strong>Here's a summary of what you ordered:</strong></p>
+        <ul>
+          ${itemLines.map((l) => `<li>${escapeHtml(l)}</li>`).join("\n")}
+        </ul>
+        <p><strong>Total: ${formatPrice(totalCents)}</strong></p>
+        <p>${fulfillmentLines.map((l) => escapeHtml(l)).join("<br/>")}</p>
+        <p>Our juices are cold-pressed fresh to order, so we appreciate your patience while we get yours ready.</p>
+        <p>Questions in the meantime? Just reply to this email or call 912-223-3475.</p>
+        <p>— UPHILL HARVEST<br/>uphillnutrition.us</p>
+      `.trim();
+
+      await sendViaResend(env.RESEND_API_KEY, {
+        to: [order.customerEmail],
+        replyTo: env.ORDER_NOTIFY_EMAIL,
+        subject: `Thanks for your order, ${customerFirstName}!`,
+        text: customerText,
+        html: customerHtml,
+      });
+    } catch (err) {
+      console.error("Resend order email (customer thank-you) failed:", err);
+      // Intentionally not re-thrown — the shop was already notified above.
+    }
   }
 }

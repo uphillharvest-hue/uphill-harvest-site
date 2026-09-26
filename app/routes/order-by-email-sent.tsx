@@ -22,8 +22,9 @@ export default function OrderByEmailSent() {
     <main className="mx-auto max-w-xl px-4 py-24 text-center sm:px-6">
       <h1 className="text-2xl font-bold">We got your order!</h1>
       <p className="mt-3 text-brand-grey">
-                Your order details were emailed to UPHILL NUTRITION. Our team will reach out shortly by phone
-        or email to confirm details and collect payment.
+                Thank you for your order! Your details were emailed to UPHILL NUTRITION, and our team will
+        reach out shortly by phone or email to confirm everything and collect payment. Our juices
+        are cold-pressed fresh to order, so we appreciate your patience while we get yours ready.
       </p>
       <Link
         to="/shop"

@@ -37,46 +37,37 @@ export const MAX_UNITS_PER_BOX = 6;
  */
 const BASE_WEIGHT_LB = 3;
 
-export type ShippingServiceId = "PRIORITY" | "EXPRESS";
+export type ShippingServiceId = "OVERNIGHT";
 
 interface ServiceConfig {
   id: ShippingServiceId;
   name: string;
   /** Delivery estimate shown to the customer. */
   transit: string;
-  /** Highest zone this service is offered to. Juice can't sit in transit too long. */
+  /** Highest zone this service is offered to. */
   maxZone: number;
   rates: Record<number, { base: number; perLb: number }>;
 }
 
+// Overnight only: juice is perishable, so every shipped order goes next
+// business day (e.g. UPS Next Day Air / FedEx Standard Overnight / USPS
+// Priority Mail Express where it's overnight). Rates are padded estimates of
+// overnight label costs for a small insulated box.
 export const SHIPPING_SERVICES: ServiceConfig[] = [
   {
-    id: "PRIORITY",
-    name: "Priority",
-    transit: "1–2 business days",
-    // Priority beyond zone 4 regularly takes 3 days: too long for juice.
-    maxZone: 4,
-    rates: {
-      1: { base: 1000, perLb: 120 },
-      2: { base: 1000, perLb: 120 },
-      3: { base: 1150, perLb: 160 },
-      4: { base: 1350, perLb: 220 },
-    },
-  },
-  {
-    id: "EXPRESS",
-    name: "Express",
-    transit: "1–2 days, guaranteed",
+    id: "OVERNIGHT",
+    name: "Overnight",
+    transit: "next business day",
     maxZone: 8,
     rates: {
-      1: { base: 3500, perLb: 150 },
-      2: { base: 3500, perLb: 150 },
-      3: { base: 3900, perLb: 250 },
-      4: { base: 4400, perLb: 350 },
-      5: { base: 4900, perLb: 450 },
-      6: { base: 5400, perLb: 550 },
-      7: { base: 6000, perLb: 650 },
-      8: { base: 6700, perLb: 750 },
+      1: { base: 4500, perLb: 300 },
+      2: { base: 4500, perLb: 300 },
+      3: { base: 5200, perLb: 400 },
+      4: { base: 6000, perLb: 500 },
+      5: { base: 6800, perLb: 600 },
+      6: { base: 7500, perLb: 700 },
+      7: { base: 8200, perLb: 800 },
+      8: { base: 9000, perLb: 900 },
     },
   },
 ];

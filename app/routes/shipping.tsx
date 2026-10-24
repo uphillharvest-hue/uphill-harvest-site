@@ -106,8 +106,8 @@ function AddressAndRates({
     <main className="mx-auto max-w-xl px-4 py-12 sm:px-6">
       <h1 className="text-2xl font-bold">Where's this headed?</h1>
       <p className="mt-2 text-sm text-brand-grey">
-        Juice ships cold and fast. Enter your address and your shipping cost shows up as soon as
-        your ZIP code is in.
+        Juice ships cold, overnight. Enter your address and your shipping cost shows up as soon
+        as your ZIP code is in.
       </p>
       {hasUnshippableLines ? (
         <p className="mt-3 rounded-lg bg-brand-orange/10 px-4 py-3 text-sm text-brand-orange">

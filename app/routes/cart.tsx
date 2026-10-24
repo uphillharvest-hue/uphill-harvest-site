@@ -144,7 +144,7 @@ export default function Cart() {
 
           <div className="rounded-xl border border-black/10 p-4">
             <p className="font-medium">Ship to me</p>
-            <p className="mt-1 text-sm text-brand-grey">We'll quote a live, expedited shipping rate at checkout.</p>
+            <p className="mt-1 text-sm text-brand-grey">Enter your address to see your shipping cost (lower 48 states).</p>
 
             <Form method="post" action="/checkout/shipping" className="mt-4">
               <input type="hidden" name="cart" value={JSON.stringify(lines)} />

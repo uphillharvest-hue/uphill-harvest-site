@@ -1,44 +1,27 @@
+import { useState } from "react";
 import { data, Form, Link, redirect } from "react-router";
 import type { Route } from "./+types/shipping";
 import { formatPrice } from "../data/products";
 import type { CartLine } from "../context/cart-context";
-import { cloudflareContext } from "../lib/cloudflare-context";
-import {
-  getShippingRates,
-  summarizeCartForShipping,
-  ShippingNotConfiguredError,
-  ShippingUnavailableError,
-  MAX_UNITS_PER_BOX,
-  type ShippingRateOption,
-} from "../lib/shipping";
+import { getShippingQuote, summarizeCartForShipping } from "../lib/shipping";
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Shipping — UPHILL HARVEST" }];
 }
 
-// No cart data means there's nothing to quote — send them back to build one.
+// This page only has something to show after /cart posts the cart here.
+// (Don't redirect from the loader: React Router re-runs it after the POST,
+// and a redirect there would bounce every customer back to the cart.)
 export async function loader() {
-  return redirect("/cart");
+  return null;
 }
 
 type ActionResult =
-  | { step: "not-configured"; cart: CartLine[] }
   | { step: "unshippable"; cart: CartLine[] }
-  | { step: "address"; cart: CartLine[]; overCapacity: boolean }
-  | { step: "rates"; cart: CartLine[]; rates: ShippingRateOption[]; recipient: RecipientFields }
-  | { step: "error"; cart: CartLine[]; message: string };
+  | { step: "address"; cart: CartLine[]; hasUnshippableLines: boolean };
 
-interface RecipientFields {
-  name: string;
-  street1: string;
-  street2: string;
-  city: string;
-  state: string;
-  zip: string;
-  phone: string;
-}
-
-export async function action({ request, context }: Route.ActionArgs) {
+// Arrives here from /cart's "Continue to shipping" button with the cart.
+export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
   const raw = formData.get("cart");
 
@@ -51,71 +34,36 @@ export async function action({ request, context }: Route.ActionArgs) {
     });
   }
 
-  if (cart.length === 0) {
+  if (!Array.isArray(cart) || cart.length === 0) {
     return redirect("/cart");
   }
 
-  const { totalOz, unitCount, hasShippableLines } = summarizeCartForShipping(cart);
-
+  const { hasShippableLines, hasUnshippableLines } = summarizeCartForShipping(cart);
   if (!hasShippableLines) {
     return data<ActionResult>({ step: "unshippable", cart });
   }
-
-  const street1 = formData.get("street1");
-
-  // First pass through this route for this cart: show the address form.
-  if (typeof street1 !== "string" || street1.trim() === "") {
-    const { env } = context.get(cloudflareContext);
-    if (!env.EASYPOST_API_KEY) {
-      return data<ActionResult>({ step: "not-configured", cart });
-    }
-    return data<ActionResult>({
-      step: "address",
-      cart,
-      overCapacity: unitCount > MAX_UNITS_PER_BOX,
-    });
-  }
-
-  // Second pass: address was submitted — quote real rates.
-  const recipient: RecipientFields = {
-    name: String(formData.get("name") ?? ""),
-    street1: street1.trim(),
-    street2: String(formData.get("street2") ?? "").trim(),
-    city: String(formData.get("city") ?? "").trim(),
-    state: String(formData.get("state") ?? "")
-      .trim()
-      .toUpperCase(),
-    zip: String(formData.get("zip") ?? "").trim(),
-    phone: String(formData.get("phone") ?? "").trim(),
-  };
-
-  const { env } = context.get(cloudflareContext);
-
-  try {
-    const rates = await getShippingRates(env.EASYPOST_API_KEY, recipient, cart);
-    return data<ActionResult>({ step: "rates", cart, rates, recipient });
-  } catch (err) {
-    if (err instanceof ShippingNotConfiguredError) {
-      return data<ActionResult>({ step: "not-configured", cart });
-    }
-    if (err instanceof ShippingUnavailableError) {
-      return data<ActionResult>({ step: "error", cart, message: err.message });
-    }
-    console.error("Unexpected shipping error:", err);
-    return data<ActionResult>({
-      step: "error",
-      cart,
-      message: "Something went wrong getting shipping rates. Please try again.",
-    });
-  }
+  return data<ActionResult>({ step: "address", cart, hasUnshippableLines });
 }
+
+const inputClass = "mt-1 w-full rounded-lg border border-black/10 px-3 py-2";
 
 export default function Shipping({ actionData }: Route.ComponentProps) {
   if (!actionData) {
-    return null; // loader always redirects away before this renders
+    return (
+      <main className="mx-auto max-w-xl px-4 py-24 text-center sm:px-6">
+        <h1 className="text-2xl font-bold">Start from your cart</h1>
+        <p className="mt-3 text-brand-grey">
+          Head back to your cart and choose "Ship to me" to enter your address.
+        </p>
+        <Link
+          to="/cart"
+          className="mt-6 inline-block rounded-full bg-brand-teal px-6 py-3 font-medium text-white hover:bg-brand-teal-dark"
+        >
+          Back to cart
+        </Link>
+      </main>
+    );
   }
-
-  const cartField = <input type="hidden" name="cart" value={JSON.stringify(actionData.cart)} />;
 
   if (actionData.step === "unshippable") {
     return (
@@ -135,180 +83,146 @@ export default function Shipping({ actionData }: Route.ComponentProps) {
     );
   }
 
-  if (actionData.step === "not-configured") {
-    return (
-      <main className="mx-auto max-w-xl px-4 py-24 text-center sm:px-6">
-        <h1 className="text-2xl font-bold">Shipping isn't connected yet</h1>
-        <p className="mt-3 text-brand-grey">
-          This store's shipping-rate provider hasn't been set up on the backend yet, so online
-          checkout for shipped orders is temporarily unavailable. Your cart is safe — try again
-          soon.
-        </p>
-        <Link
-          to="/cart"
-          className="mt-6 inline-block rounded-full bg-brand-teal px-6 py-3 font-medium text-white hover:bg-brand-teal-dark"
-        >
-          Back to cart
-        </Link>
-      </main>
-    );
-  }
+  return <AddressAndRates cart={actionData.cart} hasUnshippableLines={actionData.hasUnshippableLines} />;
+}
 
-  if (actionData.step === "error") {
-    return (
-      <main className="mx-auto max-w-xl px-4 py-24 text-center sm:px-6">
-        <h1 className="text-2xl font-bold">Couldn't get a shipping rate</h1>
-        <p className="mt-3 text-brand-grey">{actionData.message}</p>
-        <Link
-          to="/cart"
-          className="mt-6 inline-block rounded-full bg-brand-teal px-6 py-3 font-medium text-white hover:bg-brand-teal-dark"
-        >
-          Back to cart
-        </Link>
-      </main>
-    );
-  }
+function AddressAndRates({
+  cart,
+  hasUnshippableLines,
+}: {
+  cart: CartLine[];
+  hasUnshippableLines: boolean;
+}) {
+  const [zip, setZip] = useState("");
+  const [chosen, setChosen] = useState<string | null>(null);
 
-  if (actionData.step === "address") {
-    return (
-      <main className="mx-auto max-w-xl px-4 py-12 sm:px-6">
-        <h1 className="text-2xl font-bold">Where's this headed?</h1>
-        <p className="mt-2 text-sm text-brand-grey">
-          Juice ships cold and fast — we'll show real Priority/2-Day/Overnight rates for your
-          address next, no ground shipping.
-        </p>
-        {actionData.overCapacity ? (
-          <p className="mt-3 rounded-lg bg-brand-orange/10 px-4 py-3 text-sm text-brand-orange">
-            This is a larger order than we've automated rates for yet — the quote you get next
-            may not be accurate. We'll follow up before charging your card if anything looks off.
-          </p>
-        ) : null}
+  const zipComplete = /^\d{5}$/.test(zip.trim());
+  const quote = zipComplete ? getShippingQuote(zip, cart) : null;
+  const options = quote?.options ?? [];
+  const selectedId =
+    options.find((o) => o.id === chosen)?.id ?? options[0]?.id ?? "";
 
-        <Form method="post" className="mt-6 space-y-4">
-          {cartField}
-          <div>
-            <label className="block text-sm font-medium">Full name</label>
-            <input
-              name="name"
-              required
-              className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Street address</label>
-            <input
-              name="street1"
-              required
-              className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Apt / suite (optional)</label>
-            <input
-              name="street2"
-              className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2"
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-1">
-              <label className="block text-sm font-medium">City</label>
-              <input
-                name="city"
-                required
-                className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">State</label>
-              <input
-                name="state"
-                required
-                maxLength={2}
-                placeholder="GA"
-                className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 uppercase"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">ZIP</label>
-              <input
-                name="zip"
-                required
-                className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Phone (for the carrier)</label>
-            <input
-              name="phone"
-              type="tel"
-              className="mt-1 w-full rounded-lg border border-black/10 px-3 py-2"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full rounded-full bg-brand-orange px-6 py-3 text-center font-semibold text-white transition hover:bg-brand-orange-dark"
-          >
-            See shipping rates
-          </button>
-        </Form>
-      </main>
-    );
-  }
-
-  // step === "rates"
-  const { rates, recipient } = actionData;
   return (
     <main className="mx-auto max-w-xl px-4 py-12 sm:px-6">
-      <h1 className="text-2xl font-bold">Choose a shipping speed</h1>
+      <h1 className="text-2xl font-bold">Where's this headed?</h1>
       <p className="mt-2 text-sm text-brand-grey">
-        Live rates for {recipient.city}, {recipient.state} {recipient.zip}, plus a flat packaging
-        fee for the insulated box and ice packs.
+        Juice ships cold and fast. Enter your address and your shipping cost shows up as soon as
+        your ZIP code is in.
       </p>
+      {hasUnshippableLines ? (
+        <p className="mt-3 rounded-lg bg-brand-orange/10 px-4 py-3 text-sm text-brand-orange">
+          Gallon sizes can't ship by mail and won't be included in this shipment. Remove them
+          from your cart or choose local pickup for those.
+        </p>
+      ) : null}
 
-      <Form method="post" action="/checkout" className="mt-6 space-y-3">
-        {cartField}
-        <input type="hidden" name="recipientName" value={recipient.name} />
-        <input type="hidden" name="recipientStreet1" value={recipient.street1} />
-        <input type="hidden" name="recipientStreet2" value={recipient.street2} />
-        <input type="hidden" name="recipientCity" value={recipient.city} />
-        <input type="hidden" name="recipientState" value={recipient.state} />
-        <input type="hidden" name="recipientZip" value={recipient.zip} />
-        <input type="hidden" name="recipientPhone" value={recipient.phone} />
+      <Form method="post" action="/checkout" className="mt-6 space-y-4">
+        <input type="hidden" name="cart" value={JSON.stringify(cart)} />
+        <input type="hidden" name="fulfillmentType" value="SHIPMENT" />
 
-        {rates.map((rate, index) => (
-          <label
-            key={rate.id}
-            className="flex cursor-pointer items-center justify-between rounded-lg border border-black/10 px-4 py-3 has-[:checked]:border-brand-teal has-[:checked]:bg-brand-teal/5"
-          >
-            <span className="flex items-center gap-3">
-              <input
-                type="radio"
-                name="selectedRateIndex"
-                value={index}
-                defaultChecked={index === 0}
-                required
-              />
-              <span>
-                <span className="block font-medium">{rate.label}</span>
-                <span className="block text-xs text-brand-grey">
-                  {formatPrice(rate.carrierCents)} carrier rate + packaging fee
-                </span>
-              </span>
-            </span>
-            <span className="font-semibold">{formatPrice(rate.totalCents)}</span>
-          </label>
-        ))}
+        <div>
+          <label className="block text-sm font-medium">Full name</label>
+          <input name="recipientName" required autoComplete="name" className={inputClass} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Street address</label>
+          <input
+            name="recipientStreet1"
+            required
+            autoComplete="address-line1"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Apt / suite (optional)</label>
+          <input name="recipientStreet2" autoComplete="address-line2" className={inputClass} />
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <label className="block text-sm font-medium">City</label>
+            <input
+              name="recipientCity"
+              required
+              autoComplete="address-level2"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">State</label>
+            <input
+              name="recipientState"
+              required
+              maxLength={2}
+              placeholder="GA"
+              autoComplete="address-level1"
+              className={`${inputClass} uppercase`}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">ZIP</label>
+            <input
+              name="recipientZip"
+              required
+              inputMode="numeric"
+              maxLength={5}
+              pattern="\d{5}"
+              autoComplete="postal-code"
+              value={zip}
+              onChange={(e) => setZip(e.target.value.replace(/\D/g, "").slice(0, 5))}
+              className={inputClass}
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Phone (for the carrier)</label>
+          <input name="recipientPhone" type="tel" autoComplete="tel" className={inputClass} />
+        </div>
 
-        <input
-          type="hidden"
-          name="rateOptions"
-          value={JSON.stringify(rates.map((r) => ({ label: r.label, totalCents: r.totalCents })))}
-        />
+        <fieldset className="pt-2">
+          <legend className="text-sm font-medium">Shipping</legend>
+
+          {!zipComplete ? (
+            <p className="mt-2 rounded-lg border border-dashed border-black/15 px-4 py-3 text-sm text-brand-grey">
+              Enter your ZIP code to see shipping options.
+            </p>
+          ) : !quote ? (
+            <p className="mt-2 rounded-lg bg-brand-orange/10 px-4 py-3 text-sm text-brand-orange">
+              Sorry, we can't ship fresh juice to that ZIP code. We ship to the lower 48 states
+              only. Choose local pickup, or email us about your order.
+            </p>
+          ) : (
+            <div className="mt-2 space-y-3">
+              {options.map((option) => (
+                <label
+                  key={option.id}
+                  className="flex cursor-pointer items-center justify-between rounded-lg border border-black/10 px-4 py-3 has-[:checked]:border-brand-teal has-[:checked]:bg-brand-teal/5"
+                >
+                  <span className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="shippingService"
+                      value={option.id}
+                      checked={selectedId === option.id}
+                      onChange={() => setChosen(option.id)}
+                      required
+                    />
+                    <span className="block font-medium">{option.label}</span>
+                  </span>
+                  <span className="font-semibold">{formatPrice(option.totalCents)}</span>
+                </label>
+              ))}
+              <p className="text-xs text-brand-grey">
+                Includes postage plus the insulated box and ice packs
+                {quote.boxes > 1 ? ` (ships in ${quote.boxes} boxes)` : ""}.
+              </p>
+            </div>
+          )}
+        </fieldset>
 
         <button
           type="submit"
-          className="mt-4 w-full rounded-full bg-brand-orange px-6 py-3 text-center font-semibold text-white transition hover:bg-brand-orange-dark"
+          disabled={!quote}
+          className="w-full rounded-full bg-brand-orange px-6 py-3 text-center font-semibold text-white transition hover:bg-brand-orange-dark disabled:opacity-50"
         >
           Continue to payment
         </button>

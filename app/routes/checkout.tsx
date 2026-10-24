@@ -2,6 +2,7 @@ import { data, redirect } from "react-router";
 import type { Route } from "./+types/checkout";
 import { getProduct, getSize } from "../data/products";
 import { cloudflareContext } from "../lib/cloudflare-context";
+import { getShippingQuote } from "../lib/shipping";
 
 interface CartLineInput {
   slug: string;
@@ -24,11 +25,23 @@ export async function action({ request, context }: Route.ActionArgs) {
     });
   }
 
+  if (!Array.isArray(lines)) lines = [];
+
+  // Two fulfillment paths land here: a customer picking up locally posts
+  // straight from /cart with fulfillmentType=PICKUP (no shipping needed at
+  // all), while a customer shipping comes from /checkout/shipping with
+  // fulfillmentType=SHIPMENT, their address, and the service they picked.
+  const fulfillmentType = formData.get("fulfillmentType");
+  const isPickup = fulfillmentType === "PICKUP";
+
   const lineItems = lines
     .map((line) => {
       const product = getProduct(line.slug);
       const size = product && getSize(product, line.sizeLabel);
-      if (!product || !size || line.quantity <= 0) return null;
+      if (!product || !size || !(line.quantity > 0)) return null;
+      // Gallons can't ship — leave them out of shipped orders (the shipping
+      // page tells the customer this before they get here).
+      if (!isPickup && !size.shippable) return null;
       return {
         name: `${product.name} (${size.label})`,
         quantity: String(line.quantity),
@@ -44,16 +57,10 @@ export async function action({ request, context }: Route.ActionArgs) {
     throw data("Your cart is empty.", { status: 400 });
   }
 
-  // Two fulfillment paths land here: a customer picking up locally posts
-  // straight from /cart with fulfillmentType=PICKUP (no shipping needed at
-  // all), while a customer shipping goes through /checkout/shipping first,
-  // which forwards the chosen rate + recipient address as hidden fields.
-  const fulfillmentType = formData.get("fulfillmentType");
-
   let fulfillment: Record<string, unknown>;
   let shippingFee: { name: string; charge: { amount: number; currency: string } } | null = null;
 
-  if (fulfillmentType === "PICKUP") {
+  if (isPickup) {
     const pickupName = formData.get("pickupName");
     if (typeof pickupName !== "string" || pickupName.trim() === "") {
       throw data("Missing your name for pickup. Please start from your cart.", { status: 400 });
@@ -75,28 +82,21 @@ export async function action({ request, context }: Route.ActionArgs) {
       },
     };
   } else {
-    // Shipping was quoted and picked on /checkout/shipping — pull the chosen
-    // rate + recipient back out of the hidden fields that form posted here.
-    const rateOptionsRaw = formData.get("rateOptions");
-    const selectedRateIndexRaw = formData.get("selectedRateIndex");
-    if (typeof rateOptionsRaw === "string" && typeof selectedRateIndexRaw === "string") {
-      try {
-        const rateOptions = JSON.parse(rateOptionsRaw) as { label: string; totalCents: number }[];
-        const chosen = rateOptions[Number(selectedRateIndexRaw)];
-        if (chosen) {
-          shippingFee = {
-            name: chosen.label,
-            charge: { amount: chosen.totalCents, currency: "USD" },
-          };
-        }
-      } catch {
-        // fall through — shippingFee stays null and we bail out below
-      }
+    // Recalculate the shipping price here from the ZIP + cart + chosen
+    // service. Never trust a price sent from the browser.
+    const recipientZip = String(formData.get("recipientZip") ?? "").trim();
+    const serviceId = formData.get("shippingService");
+    const quote = getShippingQuote(recipientZip, lines);
+    const chosen = quote?.options.find((o) => o.id === serviceId);
+    if (!chosen) {
+      throw data("Missing or invalid shipping selection. Please start from your cart.", {
+        status: 400,
+      });
     }
-
-    if (!shippingFee) {
-      throw data("Missing shipping selection. Please start from your cart.", { status: 400 });
-    }
+    shippingFee = {
+      name: chosen.label,
+      charge: { amount: chosen.totalCents, currency: "USD" },
+    };
 
     const recipientStreet1 = formData.get("recipientStreet1");
     if (typeof recipientStreet1 !== "string" || recipientStreet1.trim() === "") {
@@ -108,7 +108,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       address_line_2: String(formData.get("recipientStreet2") ?? "") || undefined,
       locality: String(formData.get("recipientCity") ?? ""),
       administrative_district_level_1: String(formData.get("recipientState") ?? ""),
-      postal_code: String(formData.get("recipientZip") ?? ""),
+      postal_code: recipientZip,
       country: "US",
       phone_number: String(formData.get("recipientPhone") ?? "") || undefined,
     };

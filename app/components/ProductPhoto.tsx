@@ -1,5 +1,5 @@
 import type { Product } from "../data/products";
-import { productImages, gallonImage } from "../data/product-images";
+import { productImages, gallonImages, gallonImage } from "../data/product-images";
 import { ProductArt } from "./ProductArt";
 
 /**
@@ -16,7 +16,10 @@ export function ProductPhoto({
   sizeLabel?: string;
   className?: string;
 }) {
-  const src = sizeLabel === "Gallon" ? gallonImage : productImages[product.slug];
+  const src =
+    sizeLabel === "Gallon"
+      ? (gallonImages[product.slug] ?? gallonImage)
+      : productImages[product.slug];
 
   if (!src) {
     return <ProductArt product={product} className={className} />;

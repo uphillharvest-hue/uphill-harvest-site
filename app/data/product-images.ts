@@ -10,6 +10,10 @@ import gingerEssence from "../assets/products/ginger-essence.png";
 import goldenFire from "../assets/products/golden-fire.png";
 import beetCharge from "../assets/products/beet-charge.png";
 import gallonAllFlavors from "../assets/products/gallon-all-flavors.png";
+import gallonIslandGlow from "../assets/products/gallon-island-glow.png";
+import gallonGreenGoddess from "../assets/products/gallon-green-goddess.png";
+import gallonSunriseBlend from "../assets/products/gallon-sunrise-blend.png";
+import gallonBeetBoost2 from "../assets/products/gallon-beet-boost-2.png";
 
 export const productImages: Record<string, string> = {
   "island-glow": islandGlow,
@@ -21,6 +25,14 @@ export const productImages: Record<string, string> = {
   "beet-charge": beetCharge,
 };
 
-// Used for the Gallon size specifically (all four juices ship in the same
-// jug), separate from the per-flavor bottle shot above.
+// Gallon jug shots, one per flavor, colored to match each juice and labeled
+// with its name. Used for the Gallon size instead of the bottle shot above.
+export const gallonImages: Record<string, string> = {
+  "island-glow": gallonIslandGlow,
+  "green-goddess": gallonGreenGoddess,
+  "sunrise-blend": gallonSunriseBlend,
+  "beet-boost-2": gallonBeetBoost2,
+};
+
+// Fallback for any juice sold by the Gallon that has no jug shot of its own.
 export const gallonImage = gallonAllFlavors;

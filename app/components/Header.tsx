@@ -22,6 +22,14 @@ export function Header() {
           <Link to="/shop#shots" className="hover:text-brand-teal">
             Wellness Shots
           </Link>
+          <a
+            href="https://uphillfitnessga.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-brand-teal"
+          >
+            Training
+          </a>
         </nav>
         <Link
           to="/cart"

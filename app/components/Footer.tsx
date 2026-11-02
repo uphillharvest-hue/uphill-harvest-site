@@ -18,6 +18,17 @@ export function Footer() {
   info@uphillnutrition.us
               </a>
             </p>
+            <p className="mt-3">
+              Training:{" "}
+              <a
+                href="https://uphillfitnessga.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-brand-cream hover:text-brand-orange"
+              >
+                Uphill Fitness →
+              </a>
+            </p>
           </div>
         </div>
         <p className="mt-8 text-xs text-brand-cream/40">

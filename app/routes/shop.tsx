@@ -54,7 +54,7 @@ export default function Shop() {
           >
             <p className="font-semibold">Subscribe &amp; save up to 20% →</p>
             <p className="mt-1 text-sm text-brand-grey">
-              A fresh 6- or 12-pack every week, every two weeks, or monthly.
+              A fresh 6- or 12-pack, or a gallon or two, every week, every two weeks, or monthly.
             </p>
           </Link>
           <Link

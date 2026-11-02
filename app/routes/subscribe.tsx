@@ -16,7 +16,17 @@ export const SUBSCRIPTION_BOXES = [
   { id: "6x16", name: "6-pack · 16 oz", bottles: 6, priceCents: 4600, retailCents: 5400 },
   { id: "12x12", name: "12-pack · 12 oz", bottles: 12, priceCents: 6700, retailCents: 8400 },
   { id: "12x16", name: "12-pack · 16 oz", bottles: 12, priceCents: 8600, retailCents: 10800 },
-];
+  // Gallons can't ship, so gallon subscriptions are local pickup only.
+  { id: "1gal", name: "1 gallon", bottles: 1, priceCents: 5800, retailCents: 6500, pickupOnly: true },
+  { id: "2gal", name: "2 gallons", bottles: 2, priceCents: 11000, retailCents: 13000, pickupOnly: true },
+] as {
+  id: string;
+  name: string;
+  bottles: number;
+  priceCents: number;
+  retailCents: number;
+  pickupOnly?: boolean;
+}[];
 
 export const SUBSCRIPTION_FREQUENCIES = ["Every week", "Every 2 weeks", "Every month"];
 
@@ -38,7 +48,10 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
   const addShots = form.get("addShots") === "on";
   const perDelivery = box.priceCents + (addShots ? SHOT_ADDON.priceCents : 0);
-  const delivery = get("delivery") === "ship" ? "Ship to me (shipping added per delivery)" : "Local pickup";
+  const delivery =
+    get("delivery") === "ship" && !box.pickupOnly
+      ? "Ship to me (shipping added per delivery)"
+      : "Local pickup";
   const flavors = form.getAll("flavors").map(String).filter(Boolean);
   const address = [get("street"), get("city"), get("state"), get("zip")].filter(Boolean).join(", ");
 
@@ -90,6 +103,7 @@ export default function Subscribe({ actionData }: Route.ComponentProps) {
   const juices = products.filter((p) => p.category === "juice");
 
   const box = SUBSCRIPTION_BOXES.find((b) => b.id === boxId)!;
+  const shipping = delivery === "ship" && !box.pickupOnly;
   const perDelivery = box.priceCents + (addShots ? SHOT_ADDON.priceCents : 0);
 
   if (actionData?.ok) {
@@ -115,7 +129,7 @@ export default function Subscribe({ actionData }: Route.ComponentProps) {
     <main className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
       <h1 className="text-3xl font-bold">Subscribe &amp; Save</h1>
       <p className="mt-2 max-w-2xl text-brand-grey">
-        Fresh cold-pressed juice on a schedule. Pick a box and how often you want it, and save up
+        Fresh cold-pressed juice on a schedule, by the bottle or by the gallon. Pick a box and how often you want it, and save up
         to 20% on every delivery. Skip, pause, or cancel any time. Just let us know before your
         next delivery.
       </p>
@@ -123,7 +137,7 @@ export default function Subscribe({ actionData }: Route.ComponentProps) {
       <Form method="post" className="mt-10 space-y-10">
         <section>
           <h2 className="text-lg font-semibold">1. Choose your box</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {SUBSCRIPTION_BOXES.map((b) => (
               <label
                 key={b.id}
@@ -145,6 +159,9 @@ export default function Subscribe({ actionData }: Route.ComponentProps) {
                 <p className="mt-2 inline-block rounded-full bg-brand-teal/10 px-2 py-0.5 text-xs font-semibold text-brand-teal">
                   Save {percentOff(b)}%
                 </p>
+                {b.pickupOnly ? (
+                  <p className="mt-2 text-xs text-brand-grey">Local pickup only</p>
+                ) : null}
               </label>
             ))}
           </div>
@@ -184,7 +201,7 @@ export default function Subscribe({ actionData }: Route.ComponentProps) {
         <section>
           <h2 className="text-lg font-semibold">3. Flavors</h2>
           <p className="mt-1 text-sm text-brand-grey">
-            Leave these unchecked for a mix of all four, or pick your favorites.
+            Leave these unchecked for a mix of all four, or pick your favorites. For 2 gallons, pick two flavors if you want them different.
           </p>
           <div className="mt-3 flex flex-wrap gap-4">
             {juices.map((p) => (
@@ -221,7 +238,7 @@ export default function Subscribe({ actionData }: Route.ComponentProps) {
                   type="radio"
                   name="delivery"
                   value="pickup"
-                  checked={delivery === "pickup"}
+                  checked={!shipping}
                   onChange={() => setDelivery("pickup")}
                 />
                 Local pickup (Brunswick)
@@ -231,15 +248,19 @@ export default function Subscribe({ actionData }: Route.ComponentProps) {
                   type="radio"
                   name="delivery"
                   value="ship"
-                  checked={delivery === "ship"}
+                  checked={shipping}
+                  disabled={box.pickupOnly}
                   onChange={() => setDelivery("ship")}
                 />
-                Ship to me (overnight shipping added per delivery)
+                <span className={box.pickupOnly ? "text-brand-grey/60" : ""}>
+                  Ship to me (overnight shipping added per delivery)
+                  {box.pickupOnly ? " · not available for gallons" : ""}
+                </span>
               </label>
             </div>
           </fieldset>
 
-          {delivery === "ship" ? (
+          {shipping ? (
             <div className="mt-4 grid gap-3 sm:grid-cols-6">
               <div className="sm:col-span-6">
                 <label className="block text-sm font-medium">Street address</label>
@@ -282,7 +303,7 @@ export default function Subscribe({ actionData }: Route.ComponentProps) {
               {formatPrice(perDelivery)}
               <span className="text-sm font-normal text-brand-grey">
                 {" "}
-                per delivery{delivery === "ship" ? " + shipping" : ""}
+                per delivery{shipping ? " + shipping" : ""}
               </span>
             </p>
             <p className="text-xs text-brand-grey">

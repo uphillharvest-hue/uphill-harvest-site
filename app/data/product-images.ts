@@ -25,7 +25,7 @@ export const productImages: Record<string, string> = {
   "beet-charge": beetCharge,
 };
 
-// Gallon jug shots, one per flavor, colored to match each juice and labeled
+// Gallon stand-up pouch shots, one per flavor, colored to match each juice and labeled
 // with its name. Used for the Gallon size instead of the bottle shot above.
 export const gallonImages: Record<string, string> = {
   "island-glow": gallonIslandGlow,

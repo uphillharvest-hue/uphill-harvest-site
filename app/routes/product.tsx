@@ -62,7 +62,7 @@ export default function ProductDetail({ loaderData }: Route.ComponentProps) {
             <p className="mt-1 text-sm text-brand-teal">
               {selectedSize.bottlesPerItem} × 16 oz bottles · save{" "}
               {formatPrice(cleanseRetailCents(selectedSize) - selectedSize.priceCents)} vs. buying
-              them one at a time
+              them one at a time · local pickup only
             </p>
           ) : product.category === "shot" ? (
             <p className="mt-1 text-sm text-brand-teal">Mix any 5 shots for 12% off, 10 for 20% off.</p>

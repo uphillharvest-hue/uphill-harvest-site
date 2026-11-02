@@ -122,8 +122,7 @@ export default function Cart() {
           </div>
         ) : null}
         <p className="text-xs text-brand-grey">
-          Shipping is added on the next step. Gallons are pickup only, so their savings apply
-          to pickup orders.
+          Shipping is added on the next step. Gallons and cleanses are pickup only.
         </p>
       </div>
 

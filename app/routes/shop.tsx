@@ -81,7 +81,7 @@ export default function Shop() {
       <section id="cleanses" className="mt-16 scroll-mt-24">
         <h2 className="text-xl font-semibold">Juice Cleanses</h2>
         <p className="mb-6 mt-1 text-sm text-brand-grey">
-          Six 16 oz juices per day across all four flavors. 1-, 3- and 5-day options.
+          Six 16 oz juices per day across all four flavors. 1-, 3- and 5-day options. Local pickup only.
         </p>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {cleanses.map((product) => (

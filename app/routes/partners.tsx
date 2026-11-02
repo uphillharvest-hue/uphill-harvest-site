@@ -8,6 +8,9 @@ export function meta({}: Route.MetaArgs) {
   return [{ title: "Wholesale, Events & Private Label — UPHILL HARVEST" }];
 }
 
+// SETTINGS: private label minimum is 60 bottles a month.
+const PRIVATE_LABEL_MIN_BOTTLES_PER_MONTH = 60;
+
 const PARTNER_TYPES = [
   {
     id: "wholesale",
@@ -32,12 +35,19 @@ const PARTNER_TYPES = [
       "Your logo and label design on our bottles",
       "Choose from our recipes or develop a custom blend",
       "2 oz shots, 12 oz and 16 oz bottles",
+      `Minimum order: ${PRIVATE_LABEL_MIN_BOTTLES_PER_MONTH} bottles per month`,
       "Great for gyms, trainers, spas, hotels and wellness brands",
     ],
   },
 ];
 
 const VOLUMES = ["24–47 bottles", "48–99 bottles", "100–249 bottles", "250+ bottles", "Not sure yet"];
+const PRIVATE_LABEL_VOLUMES = [
+  "60–99 bottles / month",
+  "100–249 bottles / month",
+  "250–499 bottles / month",
+  "500+ bottles / month",
+];
 const FREQUENCIES = ["One time", "Weekly", "Every 2 weeks", "Monthly", "Not sure yet"];
 
 export async function action({ request, context }: Route.ActionArgs) {
@@ -48,6 +58,16 @@ export async function action({ request, context }: Route.ActionArgs) {
   const email = get("email");
   if (!type || !name || !email) {
     return data({ ok: false, error: "Please pick what you're interested in and fill in your name and email." }, { status: 400 });
+  }
+
+  if (type.id === "private-label" && !PRIVATE_LABEL_VOLUMES.includes(get("volume"))) {
+    return data(
+      {
+        ok: false,
+        error: `Private label orders start at ${PRIVATE_LABEL_MIN_BOTTLES_PER_MONTH} bottles per month. Please choose your monthly quantity.`,
+      },
+      { status: 400 },
+    );
   }
 
   const { env } = context.get(cloudflareContext);
@@ -146,6 +166,12 @@ export default function Partners({ actionData }: Route.ComponentProps) {
         </p>
 
         <Form method="post" className="mt-6 space-y-4">
+          {type === "private-label" ? (
+            <p className="rounded-lg bg-white px-4 py-3 text-sm text-brand-grey">
+              Private label orders start at{" "}
+              <strong>{PRIVATE_LABEL_MIN_BOTTLES_PER_MONTH} bottles per month</strong>.
+            </p>
+          ) : null}
           <fieldset>
             <legend className="text-sm font-medium">I'm interested in</legend>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -187,11 +213,17 @@ export default function Partners({ actionData }: Route.ComponentProps) {
             </div>
             <div>
               <label className="block text-sm font-medium">Estimated quantity</label>
-              <select name="volume" className={`${inputClass} bg-white`} defaultValue="">
+              <select
+                key={type === "private-label" ? "pl" : "std"}
+                name="volume"
+                required={type === "private-label"}
+                className={`${inputClass} bg-white`}
+                defaultValue=""
+              >
                 <option value="" disabled>
                   Choose one
                 </option>
-                {VOLUMES.map((v) => (
+                {(type === "private-label" ? PRIVATE_LABEL_VOLUMES : VOLUMES).map((v) => (
                   <option key={v}>{v}</option>
                 ))}
               </select>

@@ -134,11 +134,11 @@ export const products: Product[] = [
     tagline: "Six 16 oz juices a day, all four flavors.",
     ingredients: ["Green Goddess", "Sunrise Blend", "Island Glow", "Beet Boost 2"],
     description:
-      "A full day (or three, or five) of cold-pressed juice: six 16 oz bottles per day, mixed across Green Goddess, Sunrise Blend, Island Glow and Beet Boost 2. Tell us in your order notes if you'd like more of a favorite.",
+      "A full day (or three, or five) of cold-pressed juice: six 16 oz bottles per day, mixed across Green Goddess, Sunrise Blend, Island Glow and Beet Boost 2. Tell us in your order notes if you'd like more of a favorite. Local pickup only.",
     sizes: [
-      { label: "1 Day", priceCents: 4800, shippable: true, shipWeightOz: 108, bottlesPerItem: 6 },
-      { label: "3 Day", priceCents: 13500, shippable: true, shipWeightOz: 324, bottlesPerItem: 18 },
-      { label: "5 Day", priceCents: 21500, shippable: true, shipWeightOz: 540, bottlesPerItem: 30 },
+      { label: "1 Day", priceCents: 4800, shippable: false, shipWeightOz: 108, bottlesPerItem: 6 },
+      { label: "3 Day", priceCents: 13500, shippable: false, shipWeightOz: 324, bottlesPerItem: 18 },
+      { label: "5 Day", priceCents: 21500, shippable: false, shipWeightOz: 540, bottlesPerItem: 30 },
     ],
     accent: "#3F7D3A",
   },

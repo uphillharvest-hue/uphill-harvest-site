@@ -69,10 +69,10 @@ export default function Shipping({ actionData }: Route.ComponentProps) {
   if (actionData.step === "unshippable") {
     return (
       <main className="mx-auto max-w-xl px-4 py-24 text-center sm:px-6">
-        <h1 className="text-2xl font-bold">Gallons ship locally, not by mail</h1>
+        <h1 className="text-2xl font-bold">Gallons and cleanses are pickup only</h1>
         <p className="mt-3 text-brand-grey">
-          A full gallon is too heavy and fragile to ship reliably with ice packs. For gallon
-          orders, please reach out directly to arrange local pickup or delivery.
+          Gallons and juice cleanses are too heavy to ship cold overnight at a fair price.
+          Go back to your cart and choose local pickup for these.
         </p>
         <Link
           to="/cart"
@@ -122,8 +122,8 @@ function AddressAndRates({
       </p>
       {hasUnshippableLines ? (
         <p className="mt-3 rounded-lg bg-brand-orange/10 px-4 py-3 text-sm text-brand-orange">
-          Gallon sizes can't ship by mail and won't be included in this shipment. Remove them
-          from your cart or choose local pickup for those.
+          Gallons and juice cleanses are pickup only and won't be included in this shipment.
+          Remove them from your cart or choose local pickup for those.
         </p>
       ) : null}
 

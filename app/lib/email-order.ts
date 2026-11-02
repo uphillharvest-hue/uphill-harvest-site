@@ -8,13 +8,14 @@
 // own thank-you confirmation, are both sent from a verified sending domain
 // (mail.uphillnutrition.us) so Resend can deliver to any customer address,
 // not just the account's own inbox.
-import { getProduct, getSize, formatPrice } from "../data/products";
+import { formatPrice } from "../data/products";
+import { priceCart, type CartDiscount } from "./pricing";
 import type { CartLine } from "../context/cart-context";
 
 export class EmailOrderNotConfiguredError extends Error {}
 export class EmailOrderSendError extends Error {}
 
-const SENDER = "UPHILL HARVEST <orders@mail.uphillnutrition.us>";
+export const SENDER = "UPHILL HARVEST <orders@mail.uphillnutrition.us>";
 
 export interface OrderLineItem {
   name: string;
@@ -39,29 +40,27 @@ export interface EmailedOrder {
   notes: string;
 }
 
-// Recomputes line items + total server-side from the product catalog rather
-// than trusting anything the client sent about pricing.
-export function summarizeOrder(cart: CartLine[]): { items: OrderLineItem[]; totalCents: number } {
-  const items: OrderLineItem[] = [];
-  let totalCents = 0;
-
-  for (const line of cart) {
-    const product = getProduct(line.slug);
-    const size = product && getSize(product, line.sizeLabel);
-    if (!product || !size || line.quantity <= 0) continue;
-    items.push({
-      name: product.name,
-      sizeLabel: size.label,
-      quantity: line.quantity,
-      priceCents: size.priceCents,
-    });
-    totalCents += size.priceCents * line.quantity;
-  }
-
-  return { items, totalCents };
+// Recomputes line items, pack discounts and total server-side from the
+// product catalog rather than trusting anything the client sent about pricing.
+export function summarizeOrder(cart: CartLine[]): {
+  items: OrderLineItem[];
+  discounts: CartDiscount[];
+  totalCents: number;
+} {
+  const priced = priceCart(cart);
+  return {
+    items: priced.lines.map((l) => ({
+      name: l.name,
+      sizeLabel: l.sizeLabel,
+      quantity: l.quantity,
+      priceCents: l.unitCents,
+    })),
+    discounts: priced.discounts,
+    totalCents: priced.totalCents,
+  };
 }
 
-function escapeHtml(value: string): string {
+export function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -69,7 +68,7 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-async function sendViaResend(
+export async function sendViaResend(
   apiKey: string,
   payload: { to: string[]; replyTo?: string; subject: string; text: string; html: string },
 ): Promise<void> {
@@ -103,14 +102,18 @@ export async function sendOrderEmail(
     throw new EmailOrderNotConfiguredError();
   }
 
-  const { items, totalCents } = summarizeOrder(order.cart);
+  const { items, discounts, totalCents } = summarizeOrder(order.cart);
   if (items.length === 0) {
     throw new EmailOrderSendError("Cart was empty.");
   }
 
-  const itemLines = items.map(
-    (item) => `${item.quantity} × ${item.name} (${item.sizeLabel}) — ${formatPrice(item.priceCents * item.quantity)}`,
-  );
+  const itemLines = [
+    ...items.map(
+      (item) =>
+        `${item.quantity} × ${item.name} (${item.sizeLabel}) — ${formatPrice(item.priceCents * item.quantity)}`,
+    ),
+    ...discounts.map((d) => `Savings: ${d.name} — −${formatPrice(d.amountCents)}`),
+  ];
 
   const fulfillmentLines =
     order.fulfillmentType === "PICKUP"

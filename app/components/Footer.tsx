@@ -1,3 +1,5 @@
+import { Link } from "react-router";
+
 export function Footer() {
   return (
     <footer className="mt-24 border-t border-black/5 bg-brand-black text-brand-cream">
@@ -42,6 +44,13 @@ export function Footer() {
             </p>
           </div>
         </div>
+        <nav className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-brand-cream/80">
+          <Link to="/shop" className="hover:text-brand-orange">Shop</Link>
+          <Link to="/shop#bulk" className="hover:text-brand-orange">Bulk deals</Link>
+          <Link to="/shop#cleanses" className="hover:text-brand-orange">Cleanses</Link>
+          <Link to="/subscribe" className="hover:text-brand-orange">Subscribe &amp; Save</Link>
+          <Link to="/partners" className="hover:text-brand-orange">Wholesale, Events &amp; Private Label</Link>
+        </nav>
         <p className="mt-8 text-xs text-brand-cream/40">
           © {new Date().getFullYear()} UPHILL HARVEST. All rights reserved.
         </p>

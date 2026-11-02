@@ -9,6 +9,7 @@ import beetBoost2 from "../assets/products/beet-boost-2.png";
 import gingerEssence from "../assets/products/ginger-essence.png";
 import goldenFire from "../assets/products/golden-fire.png";
 import beetCharge from "../assets/products/beet-charge.png";
+import juiceCleanse from "../assets/products/juice-cleanse.png";
 import gallonAllFlavors from "../assets/products/gallon-all-flavors.png";
 import gallonIslandGlow from "../assets/products/gallon-island-glow.png";
 import gallonGreenGoddess from "../assets/products/gallon-green-goddess.png";
@@ -23,6 +24,7 @@ export const productImages: Record<string, string> = {
   "ginger-essence": gingerEssence,
   "golden-fire": goldenFire,
   "beet-charge": beetCharge,
+  "juice-cleanse": juiceCleanse,
 };
 
 // Gallon stand-up pouch shots, one per flavor, colored to match each juice and labeled

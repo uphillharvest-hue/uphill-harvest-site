@@ -12,7 +12,7 @@ export function Header() {
             UPHILL <span className="text-brand-orange">HARVEST</span>
           </span>
         </Link>
-        <nav className="hidden items-center gap-8 text-sm font-medium sm:flex">
+        <nav className="hidden items-center gap-6 text-sm font-medium lg:flex">
           <Link to="/shop" className="hover:text-brand-teal">
             Shop
           </Link>
@@ -21,6 +21,15 @@ export function Header() {
           </Link>
           <Link to="/shop#shots" className="hover:text-brand-teal">
             Wellness Shots
+          </Link>
+          <Link to="/shop#cleanses" className="hover:text-brand-teal">
+            Cleanses
+          </Link>
+          <Link to="/subscribe" className="hover:text-brand-teal">
+            Subscribe
+          </Link>
+          <Link to="/partners" className="hover:text-brand-teal">
+            Wholesale
           </Link>
           <a
             href="https://uphillfitnessga.com"

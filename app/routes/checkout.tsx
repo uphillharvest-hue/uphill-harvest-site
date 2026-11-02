@@ -3,6 +3,7 @@ import type { Route } from "./+types/checkout";
 import { getProduct, getSize } from "../data/products";
 import { cloudflareContext } from "../lib/cloudflare-context";
 import { getShippingQuote } from "../lib/shipping";
+import { priceCart } from "../lib/pricing";
 
 interface CartLineInput {
   slug: string;
@@ -34,24 +35,34 @@ export async function action({ request, context }: Route.ActionArgs) {
   const fulfillmentType = formData.get("fulfillmentType");
   const isPickup = fulfillmentType === "PICKUP";
 
-  const lineItems = lines
-    .map((line) => {
-      const product = getProduct(line.slug);
-      const size = product && getSize(product, line.sizeLabel);
-      if (!product || !size || !(line.quantity > 0)) return null;
-      // Gallons can't ship — leave them out of shipped orders (the shipping
-      // page tells the customer this before they get here).
-      if (!isPickup && !size.shippable) return null;
-      return {
-        name: `${product.name} (${size.label})`,
-        quantity: String(line.quantity),
-        base_price_money: {
-          amount: size.priceCents,
-          currency: "USD",
-        },
-      };
-    })
-    .filter((item): item is NonNullable<typeof item> => item !== null);
+  // Gallons can't ship — leave them out of shipped orders (the shipping
+  // page tells the customer this before they get here). Pack discounts are
+  // then priced on what's actually being bought.
+  const includedLines = lines.filter((line) => {
+    const product = getProduct(line.slug);
+    const size = product && getSize(product, line.sizeLabel);
+    return Boolean(size) && (isPickup || size!.shippable);
+  });
+  const priced = priceCart(includedLines);
+
+  const lineItems = priced.lines.map((line) => ({
+    name: `${line.name} (${line.sizeLabel})`,
+    quantity: String(line.quantity),
+    base_price_money: {
+      amount: line.unitCents,
+      currency: "USD",
+    },
+  }));
+
+  // Bulk/pack savings go on the Square order as fixed-amount, order-level
+  // discounts, so the receipt shows each one by name.
+  const orderDiscounts = priced.discounts.map((d, i) => ({
+    uid: `pack-discount-${i}`,
+    name: d.name,
+    type: "FIXED_AMOUNT",
+    amount_money: { amount: d.amountCents, currency: "USD" },
+    scope: "ORDER",
+  }));
 
   if (lineItems.length === 0) {
     throw data("Your cart is empty.", { status: 400 });
@@ -149,6 +160,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       order: {
         location_id: locationId,
         line_items: lineItems,
+        ...(orderDiscounts.length > 0 ? { discounts: orderDiscounts } : {}),
         fulfillments: [fulfillment],
       },
       checkout_options: {

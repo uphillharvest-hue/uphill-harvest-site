@@ -226,7 +226,7 @@ export function summarizeCartForShipping(lines: CartLine[]): CartWeightResult {
       continue;
     }
     hasShippableLines = true;
-    unitCount += line.quantity;
+    unitCount += line.quantity * (size.bottlesPerItem ?? 1);
     juiceOz += (size.shipWeightOz ?? 16) * line.quantity;
   }
 

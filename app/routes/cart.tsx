@@ -3,13 +3,15 @@ import { Form, Link } from "react-router";
 import type { Route } from "./+types/cart";
 import { getProduct, getSize, formatPrice } from "../data/products";
 import { useCart } from "../context/cart-context";
+import { priceCart } from "../lib/pricing";
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Your Cart — UPHILL HARVEST" }];
 }
 
 export default function Cart() {
-  const { lines, setQuantity, removeItem, totalCents } = useCart();
+  const { lines, setQuantity, removeItem } = useCart();
+  const priced = priceCart(lines);
   const [pickupName, setPickupName] = useState("");
   const [pickupPhone, setPickupPhone] = useState("");
 
@@ -90,9 +92,39 @@ export default function Cart() {
         })}
       </ul>
 
-      <div className="mt-8 flex items-center justify-between border-t border-black/10 pt-6">
-        <span className="text-lg font-semibold">Total</span>
-        <span className="text-lg font-semibold">{formatPrice(totalCents)}</span>
+      <div className="mt-8 space-y-2 border-t border-black/10 pt-6">
+        {priced.discounts.length > 0 ? (
+          <>
+            <div className="flex items-center justify-between text-brand-grey">
+              <span>Subtotal</span>
+              <span>{formatPrice(priced.subtotalCents)}</span>
+            </div>
+            {priced.discounts.map((d) => (
+              <div key={d.name} className="flex items-center justify-between text-brand-teal">
+                <span>{d.name}</span>
+                <span>−{formatPrice(d.amountCents)}</span>
+              </div>
+            ))}
+          </>
+        ) : null}
+        <div className="flex items-center justify-between">
+          <span className="text-lg font-semibold">Total</span>
+          <span className="text-lg font-semibold">{formatPrice(priced.totalCents)}</span>
+        </div>
+        {priced.hints.length > 0 ? (
+          <div className="rounded-lg bg-brand-teal/5 px-4 py-3 text-sm text-brand-teal">
+            {priced.hints.map((h) => (
+              <p key={h.message}>{h.message}</p>
+            ))}
+            <Link to="/shop#bulk" className="mt-1 inline-block text-xs underline">
+              See all bulk deals
+            </Link>
+          </div>
+        ) : null}
+        <p className="text-xs text-brand-grey">
+          Shipping is added on the next step. Gallons are pickup only, so their savings apply
+          to pickup orders.
+        </p>
       </div>
 
       <div className="mt-8 border-t border-black/10 pt-6">

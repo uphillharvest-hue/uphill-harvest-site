@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { data, Link, useNavigate } from "react-router";
 import type { Route } from "./+types/product";
-import { getProduct, formatPrice } from "../data/products";
+import { getProduct, formatPrice, cleanseRetailCents } from "../data/products";
 import { ProductPhoto } from "../components/ProductPhoto";
 import { useCart } from "../context/cart-context";
 
@@ -58,12 +58,25 @@ export default function ProductDetail({ loaderData }: Route.ComponentProps) {
           )}
 
           <p className="mt-4 text-2xl font-semibold">{formatPrice(selectedSize.priceCents)}</p>
+          {product.category === "cleanse" ? (
+            <p className="mt-1 text-sm text-brand-teal">
+              {selectedSize.bottlesPerItem} × 16 oz bottles · save{" "}
+              {formatPrice(cleanseRetailCents(selectedSize) - selectedSize.priceCents)} vs. buying
+              them one at a time
+            </p>
+          ) : product.category === "shot" ? (
+            <p className="mt-1 text-sm text-brand-teal">Mix any 5 shots for 12% off, 10 for 20% off.</p>
+          ) : selectedSize.label === "Gallon" ? (
+            <p className="mt-1 text-sm text-brand-teal">Buy 2 or more gallons and save $5 on each. Local pickup only.</p>
+          ) : (
+            <p className="mt-1 text-sm text-brand-teal">Mix any 6 bottles for 10% off, 12 for 15% off.</p>
+          )}
 
           <p className="mt-6 text-brand-black/80">{product.description}</p>
 
           <div className="mt-4">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-brand-grey">
-              Ingredients
+              {product.category === "cleanse" ? "Includes" : "Ingredients"}
             </h2>
             <p className="mt-1">{product.ingredients.join(", ")}</p>
           </div>

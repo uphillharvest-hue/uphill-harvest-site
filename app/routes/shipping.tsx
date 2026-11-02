@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { data, Form, Link, redirect } from "react-router";
 import type { Route } from "./+types/shipping";
-import { formatPrice } from "../data/products";
+import { formatPrice, getProduct, getSize } from "../data/products";
+import { priceCart } from "../lib/pricing";
 import type { CartLine } from "../context/cart-context";
 import { getShippingQuote, summarizeCartForShipping } from "../lib/shipping";
 
@@ -101,6 +102,16 @@ function AddressAndRates({
   const options = quote?.options ?? [];
   const selectedId =
     options.find((o) => o.id === chosen)?.id ?? options[0]?.id ?? "";
+  const selectedOption = options.find((o) => o.id === selectedId);
+
+  // What's actually shipping (gallons are left out), with pack savings.
+  const priced = priceCart(
+    cart.filter((line) => {
+      const product = getProduct(line.slug);
+      const size = product && getSize(product, line.sizeLabel);
+      return Boolean(size?.shippable);
+    }),
+  );
 
   return (
     <main className="mx-auto max-w-xl px-4 py-12 sm:px-6">
@@ -218,6 +229,27 @@ function AddressAndRates({
             </div>
           )}
         </fieldset>
+
+        <div className="space-y-1 rounded-lg bg-black/[0.03] px-4 py-3 text-sm">
+          <div className="flex justify-between">
+            <span>Juice</span>
+            <span>{formatPrice(priced.subtotalCents)}</span>
+          </div>
+          {priced.discounts.map((d) => (
+            <div key={d.name} className="flex justify-between text-brand-teal">
+              <span>{d.name}</span>
+              <span>−{formatPrice(d.amountCents)}</span>
+            </div>
+          ))}
+          <div className="flex justify-between">
+            <span>Shipping</span>
+            <span>{selectedOption ? formatPrice(selectedOption.totalCents) : "—"}</span>
+          </div>
+          <div className="flex justify-between border-t border-black/10 pt-1 font-semibold">
+            <span>Total</span>
+            <span>{formatPrice(priced.totalCents + (selectedOption?.totalCents ?? 0))}</span>
+          </div>
+        </div>
 
         <button
           type="submit"

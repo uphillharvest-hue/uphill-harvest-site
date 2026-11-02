@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import type { Product } from "../data/products";
-import { formatPrice } from "../data/products";
+import { formatPrice, cleanseRetailCents } from "../data/products";
 import { ProductPhoto } from "./ProductPhoto";
 import { useCart } from "../context/cart-context";
 
@@ -44,7 +44,14 @@ export function ProductCard({ product }: { product: Product }) {
             </div>
           ) : null}
           <div className="flex items-center justify-between">
-            <span className="text-lg font-semibold">{formatPrice(selectedSize.priceCents)}</span>
+            <span className="flex items-baseline gap-2">
+              <span className="text-lg font-semibold">{formatPrice(selectedSize.priceCents)}</span>
+              {product.category === "cleanse" ? (
+                <span className="text-xs text-brand-grey line-through">
+                  {formatPrice(cleanseRetailCents(selectedSize))}
+                </span>
+              ) : null}
+            </span>
             <button
               type="button"
               onClick={() => addItem(product.slug, sizeLabel)}

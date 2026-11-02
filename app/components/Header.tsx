@@ -30,6 +30,14 @@ export function Header() {
           >
             Training
           </a>
+          <a
+            href="https://wraphappyonline.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-brand-teal"
+          >
+            Brunch
+          </a>
         </nav>
         <Link
           to="/cart"

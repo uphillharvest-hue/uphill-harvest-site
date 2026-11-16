@@ -54,7 +54,7 @@ Or connect this repo to Cloudflare Workers Builds (Workers & Pages → your proj
 
 ## Product catalog
 
-**Juices** (Island Glow, Green Goddess, Sunrise Blend, Beet Boost 2): 12 oz $7,
+**Juices** (Island Glow, Green Goddess, Sunrise Blend, Beet Boost): 12 oz $7,
 16 oz $9, Gallon $65.
 
 **Wellness Shots**, 2 oz, $5 each: Ginger Essence, Golden Fire, Beet Charge.

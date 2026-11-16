@@ -84,7 +84,7 @@ export const products: Product[] = [
     accent: "#E8791A",
   },
   {
-    slug: "beet-boost-2",
+    slug: "beet-boost",
     name: "Beet Boost",
     category: "juice",
     tagline: "Earthy, sweet, and built for endurance.",
@@ -149,8 +149,15 @@ export function cleanseRetailCents(size: ProductSize): number {
   return (size.bottlesPerItem ?? 1) * 900;
 }
 
+// Old product web addresses that now point to a renamed product. Keeps old links,
+// and carts saved in a customer's browser before the rename, working.
+export const LEGACY_SLUGS: Record<string, string> = {
+  "beet-boost-2": "beet-boost",
+};
+
 export function getProduct(slug: string): Product | undefined {
-  return products.find((p) => p.slug === slug);
+  const current = LEGACY_SLUGS[slug] ?? slug;
+  return products.find((p) => p.slug === current);
 }
 
 export function getSize(product: Product, sizeLabel: string): ProductSize | undefined {

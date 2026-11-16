@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { data, Link, useNavigate } from "react-router";
+import { data, Link, redirect, useNavigate } from "react-router";
 import type { Route } from "./+types/product";
 import { getProduct, formatPrice, cleanseRetailCents } from "../data/products";
 import { ProductPhoto } from "../components/ProductPhoto";
@@ -14,6 +14,10 @@ export async function loader({ params }: Route.LoaderArgs) {
   const product = getProduct(params.slug);
   if (!product) {
     throw data("Not Found", { status: 404 });
+  }
+  // An old web address for a renamed product: send the visitor to the current one.
+  if (product.slug !== params.slug) {
+    throw redirect(`/shop/${product.slug}`, 301);
   }
   return { product };
 }
